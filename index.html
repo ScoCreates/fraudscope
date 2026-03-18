@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FraudScope — Threat Intelligence Checker</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c10;
+    --surface: #0f1318;
+    --border: #1e2530;
+    --text: #c8d8e8;
+    --muted: #4a5a6a;
+    --accent: #00d4ff;
+    --warn: #ffb020;
+    --safe: #00ff9d;
+    --risk: #ff4060;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 400px;
+    background: radial-gradient(ellipse, rgba(0,212,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+  header { text-align: center; margin-bottom: 52px; }
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0,212,255,0.06);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 4px;
+    padding: 6px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .logo-badge::before { content: '◈'; animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+  }
+  .subtitle { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: 1px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 36px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.4;
+  }
+  .card-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-label::before { content: '//'; color: var(--muted); }
+  .fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 560px) {
+    .fields-grid { grid-template-columns: 1fr; }
+    .card { padding: 24px; }
+  }
+  .field-group { display: flex; flex-direction: column; gap: 8px; }
+  label {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  input {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    width: 100%;
+  }
+  input::placeholder { color: var(--muted); opacity: 0.6; }
+  input:focus {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.04);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.08);
+  }
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,212,255,0.08));
+    border: 1px solid rgba(0,212,255,0.4);
+    border-radius: 4px;
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 24px;
+  }
+  .btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,212,255,0.12));
+    border-color: var(--accent);
+    box-shadow: 0 0 24px rgba(0,212,255,0.2);
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn .scan-line {
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.15), transparent);
+  }
+  .btn.scanning .scan-line { animation: scan 1.2s ease-in-out infinite; }
+  @keyframes scan { 0% { left: -60%; } 100% { left: 140%; } }
+  .results-section { margin-top: 28px; }
+  .overall-score {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 28px 36px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .overall-score::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; }
+  .overall-score.safe::before { background: linear-gradient(90deg, transparent, var(--safe), transparent); }
+  .overall-score.medium::before { background: linear-gradient(90deg, transparent, var(--warn), transparent); }
+  .overall-score.high::before { background: linear-gradient(90deg, transparent, var(--risk), transparent); }
+  .score-ring { position: relative; flex-shrink: 0; width: 80px; height: 80px; }
+  .score-ring svg { width: 80px; height: 80px; transform: rotate(-90deg); }
+  .score-ring .track { fill: none; stroke: var(--border); stroke-width: 5; }
+  .score-ring .fill { fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+  .score-number {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 20px; font-weight: bold;
+  }
+  .score-meta { flex: 1; }
+  .score-label { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .score-desc { font-family: var(--mono); font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .result-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 560px) {
+    .result-cards { grid-template-columns: 1fr; }
+    .overall-score { flex-direction: column; text-align: center; }
+  }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    animation: fadeIn 0.4s ease forwards;
+    opacity: 0;
+  }
+  .result-card:nth-child(1) { animation-delay: 0.05s; }
+  .result-card:nth-child(2) { animation-delay: 0.1s; }
+  .result-card:nth-child(3) { animation-delay: 0.15s; }
+  .result-card:nth-child(4) { animation-delay: 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .result-card .rc-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .rc-field-name { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .rc-value { font-family: var(--mono); font-size: 12px; color: var(--text); margin-top: 3px; word-break: break-all; opacity: 0.8; }
+  .risk-badge {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 1px;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 3px;
+    flex-shrink: 0; font-weight: bold;
+  }
+  .risk-badge.safe { background: rgba(0,255,157,0.1); color: var(--safe); border: 1px solid rgba(0,255,157,0.2); }
+  .risk-badge.medium { background: rgba(255,176,32,0.1); color: var(--warn); border: 1px solid rgba(255,176,32,0.2); }
+  .risk-badge.high { background: rgba(255,64,96,0.1); color: var(--risk); border: 1px solid rgba(255,64,96,0.2); }
+  .risk-bar-wrap { height: 3px; background: var(--border); border-radius: 2px; margin-bottom: 14px; overflow: hidden; }
+  .risk-bar { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .rc-findings { font-family: var(--mono); font-size: 11px; color: var(--muted); line-height: 1.7; }
+  .rc-findings .flag { display: flex; align-items: flex-start; gap: 7px; margin-bottom: 4px; }
+  .flag-dot { width: 5px; height: 5px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .flag-dot.red { background: var(--risk); }
+  .flag-dot.yellow { background: var(--warn); }
+  .flag-dot.green { background: var(--safe); }
+  .loading-state { text-align: center; padding: 40px; font-family: var(--mono); font-size: 12px; color: var(--muted); letter-spacing: 2px; }
+  .loading-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+  @keyframes dots { 0%, 20% { content: ''; } 40% { content: '.'; } 60% { content: '..'; } 80%, 100% { content: '...'; } }
+  .error-msg {
+    font-family: var(--mono); font-size: 12px; color: var(--risk);
+    background: rgba(255,64,96,0.08); border: 1px solid rgba(255,64,96,0.2);
+    border-radius: 4px; padding: 14px 18px; letter-spacing: 1px;
+  }
+  .disclaimer { margin-top: 28px; font-family: var(--mono); font-size: 10px; color: var(--muted); line-height: 1.7; text-align: center; opacity: 0.7; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-badge">Threat Intelligence</div>
+    <h1>FraudScope</h1>
+    <p class="subtitle">// AI-powered fraud & spam risk analyzer</p>
+  </header>
+  <div class="card">
+    <div class="card-label">Input Targets</div>
+    <div class="fields-grid">
+      <div class="field-group">
+        <label><span>🌐</span> Web Address</label>
+        <input type="text" id="url-input" placeholder="https://example.com" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field-group">
+        <label><span>✉️</span> Email Address</label>
+        <input type="text" id="email-input" placeholder="user@domain.com" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field-group">
+        <label><span>👤</span> Username</label>
+        <input type="text" id="username-input" placeholder="username123" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="field-group">
+        <label><span>📞</span> Phone Number</label>
+        <input type="text" id="phone-input" placeholder="+1 555 000 0000" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <button class="btn" id="analyze-btn" onclick="runAnalysis()">
+      <div class="scan-line"></div>
+      <span>◈</span> Analyze for Fraud & Spam
+    </button>
+  </div>
+  <div class="results-section" id="results" style="display:none;"></div>
+  <div class="disclaimer">
+    ⚠ This tool uses AI pattern analysis and heuristics. Results are probabilistic estimates,<br>
+    not definitive verdicts. Always apply human judgment. Not a substitute for professional security tools.
+  </div>
+</div>
+<script>
+const CIRCUMFERENCE = 2 * Math.PI * 34;
+function getRiskLevel(score) { return score <= 30 ? 'safe' : score <= 65 ? 'medium' : 'high'; }
+function getRiskColor(level) { return level === 'safe' ? '#00ff9d' : level === 'medium' ? '#ffb020' : '#ff4060'; }
+function getRiskLabel(level) { return level === 'safe' ? 'Low Risk' : level === 'medium' ? 'Moderate Risk' : 'High Risk'; }
+
+async function runAnalysis() {
+  const url = document.getElementById('url-input').value.trim();
+  const email = document.getElementById('email-input').value.trim();
+  const username = document.getElementById('username-input').value.trim();
+  const phone = document.getElementById('phone-input').value.trim();
+  if (!url && !email && !username && !phone) { alert('Please enter at least one field to analyze.'); return; }
+
+  const btn = document.getElementById('analyze-btn');
+  btn.disabled = true;
+  btn.classList.add('scanning');
+  btn.querySelector('span').textContent = '⟳';
+
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.style.display = 'block';
+  resultsDiv.innerHTML = `<div class="loading-state">SCANNING TARGETS<span class="loading-dots"></span></div>`;
+
+  const inputSummary = [];
+  if (url) inputSummary.push(`URL: ${url}`);
+  if (email) inputSummary.push(`Email: ${email}`);
+  if (username) inputSummary.push(`Username: ${username}`);
+  if (phone) inputSummary.push(`Phone: ${phone}`);
+
+  const prompt = `You are a cybersecurity fraud and spam risk analysis system. Analyze the following inputs and assess their likelihood of being fraudulent, spam, or malicious.
+
+Inputs to analyze:
+${inputSummary.join('\n')}
+
+For EACH provided input, analyze it based on:
+- URL: Check for suspicious TLDs, lookalike domains, URL shorteners, excessive subdomains, IP addresses instead of domains, homograph attacks, known phishing patterns, random character strings, lack of HTTPS, suspicious keywords (login, verify, account, secure, update, etc.), deceptive brand mimicry
+- Email: Check for disposable/temporary email domains, suspicious TLDs, random character patterns, number/letter substitutions, lookalike domains, free email providers used for spam, domain age indicators, suspicious local-part patterns
+- Username: Check for random character patterns, bot-like naming conventions, number spam, impersonation patterns (admin, support, official), excessive special chars, very generic usernames, patterns common in fake accounts
+- Phone: Check for suspicious area codes, VoIP indicators, known spam prefixes, formatting irregularities, suspicious country codes, patterns associated with robocalls
+
+Respond ONLY with a valid JSON object (no markdown, no explanation outside JSON):
+{
+  "overall_score": <0-100 integer>,
+  "overall_summary": "<2-3 sentence plain English summary>",
+  "fields": {
+    "url": { "score": <0-100 or null>, "level": "<safe|medium|high|skipped>", "findings": ["..."] },
+    "email": { "score": <0-100 or null>, "level": "<safe|medium|high|skipped>", "findings": ["..."] },
+    "username": { "score": <0-100 or null>, "level": "<safe|medium|high|skipped>", "findings": ["..."] },
+    "phone": { "score": <0-100 or null>, "level": "<safe|medium|high|skipped>", "findings": ["..."] }
+  }
+}`;
+
+  try {
+    const response = await fetch("/api/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
+    });
+    const data = await response.json();
+    const text = data.content.map(i => i.text || '').join('');
+    const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+    renderResults(result, { url, email, username, phone });
+  } catch (err) {
+    resultsDiv.innerHTML = `<div class="error-msg">⚠ Analysis failed: ${err.message}. Please try again.</div>`;
+  }
+
+  btn.disabled = false;
+  btn.classList.remove('scanning');
+  btn.querySelector('span').textContent = '◈';
+}
+
+function renderResults(result, inputs) {
+  const overall = result.overall_score;
+  const level = getRiskLevel(overall);
+  const color = getRiskColor(level);
+  const offset = CIRCUMFERENCE - (overall / 100) * CIRCUMFERENCE;
+
+  const fieldDefs = [
+    { key: 'url', label: 'Web Address', icon: '🌐', value: inputs.url },
+    { key: 'email', label: 'Email Address', icon: '✉️', value: inputs.email },
+    { key: 'username', label: 'Username', icon: '👤', value: inputs.username },
+    { key: 'phone', label: 'Phone Number', icon: '📞', value: inputs.phone },
+  ];
+
+  const cardsHTML = fieldDefs.map(f => {
+    const fd = result.fields[f.key];
+    if (!fd || fd.level === 'skipped') return '';
+    const fc = getRiskColor(fd.level);
+    const findings = (fd.findings || []).map(fi => {
+      const dot = fd.level === 'high' ? 'red' : fd.level === 'medium' ? 'yellow' : 'green';
+      return `<div class="flag"><div class="flag-dot ${dot}"></div><span>${fi}</span></div>`;
+    }).join('');
+    return `
+      <div class="result-card">
+        <div class="rc-top">
+          <div>
+            <div class="rc-field-name">${f.icon} ${f.label}</div>
+            <div class="rc-value">${f.value}</div>
+          </div>
+          <div class="risk-badge ${fd.level}">${getRiskLabel(fd.level)}</div>
+        </div>
+        <div class="risk-bar-wrap"><div class="risk-bar" style="width:${fd.score ?? 0}%; background:${fc};"></div></div>
+        <div class="rc-findings">${findings}</div>
+      </div>`;
+  }).filter(Boolean).join('');
+
+  document.getElementById('results').innerHTML = `
+    <div class="overall-score ${level}">
+      <div class="score-ring">
+        <svg viewBox="0 0 80 80">
+          <circle class="track" cx="40" cy="40" r="34"/>
+          <circle class="fill" cx="40" cy="40" r="34" stroke="${color}"
+            stroke-dasharray="${CIRCUMFERENCE}" stroke-dashoffset="${CIRCUMFERENCE}" id="ring-fill"/>
+        </svg>
+        <div class="score-number" style="color:${color}" id="score-num">0</div>
+      </div>
+      <div class="score-meta">
+        <div class="score-label" style="color:${color}">${getRiskLabel(level)}</div>
+        <div class="score-desc">${result.overall_summary}</div>
+      </div>
+    </div>
+    <div class="result-cards">${cardsHTML}</div>`;
+
+  setTimeout(() => {
+    document.getElementById('ring-fill').style.strokeDashoffset = offset;
+    let current = 0;
+    const step = Math.ceil(overall / 40);
+    const counter = setInterval(() => {
+      current = Math.min(current + step, overall);
+      const el = document.getElementById('score-num');
+      if (el) el.textContent = current;
+      if (current >= overall) clearInterval(counter);
+    }, 25);
+  }, 100);
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Enter') runAnalysis(); });
+</script>
+</body>
+</html>
