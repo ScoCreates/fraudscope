@@ -353,19 +353,21 @@ Respond ONLY with a valid JSON object (no markdown, no explanation outside JSON)
   }
 }`;
 
-  try {
-    const response = await fetch("/api/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
-    });
-    const data = await response.json();
-    const text = data.content.map(i => i.text || '').join('');
-    const result = JSON.parse(text.replace(/```json|```/g, '').trim());
-    renderResults(result, { url, email, username, phone });
-  } catch (err) {
-    resultsDiv.innerHTML = `<div class="error-msg">⚠ Analysis failed: ${err.message}. Please try again.</div>`;
-  }
+ try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
+      });
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      if (!data.content) throw new Error("No content: " + JSON.stringify(data).slice(0, 100));
+      const text = data.content.map(i => i.text || '').join('');
+      const result = JSON.parse(text.replace(/```json|```/g, '').trim());
+      renderResults(result, { url, email, username, phone });
+    } catch (err) {
+      resultsDiv.innerHTML = `<div class="error-msg">⚠ Analysis failed: ${err.message}. Please try again.</div>`;
+    }
 
   btn.disabled = false;
   btn.classList.remove('scanning');
