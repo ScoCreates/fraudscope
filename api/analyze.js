@@ -1,4 +1,6 @@
-javascriptexport default async function handler(req, res) {
+javascript
+  
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -22,7 +24,3 @@ javascriptexport default async function handler(req, res) {
     res.status(500).json({ error: err.message });
   }
 }
-
-Scroll down and click "Commit new file"
-
-Vercel will automatically redeploy within about 30 seconds. Take a screenshot when done! 😊 Sonnet 4.6
